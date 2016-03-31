@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Automated Test Runner</title>
+      <style>
+         html, body {height: 100%;}
+         .container-fluid {height: 100%; overflow-y: scroll;margin-top: 10px}
+         pre {max-height: 90%}
+         ul {list-style: none; max-height: 100%}
+         i.spinny {margin-left: 15px; display: none}
+         #stress-label {padding-left: 10px}
+      </style>
+      <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+      <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"></script>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+   </head>
+   <body>
+      <div class="container-fluid">
+         <div class="col-md-3">
+            <div class="form-group panel panel-info">
+               <div class="panel-heading">Feature</div>
+               <div class="panel-body">
+                  <select id="feature-list" class="form-control">
+                  </select>
+               </div>
+            </div>
+            <div class="form-group panel panel-success">
+               <div class="panel-heading">Application Test</div>
+               <div class="panel-body">
+                  <div class="form-group">
+                     <button id="run-tests" class="btn btn-success">Run Tests</button>
+                     <i id="test-spinny" class="fa fa-cog fa-spin fa-2x spinny"></i>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <pre>
+            <ul id="output" class="col-md-9"></ul>
+         </pre>
+      </div>
+      <script>
+         var socket = io.connect();
+         var $cont = $('pre');
+
+         $('#run-tests').click( function () {
+            $('#test-spinny').show();
+            $('button').prop('disabled', true);
+            $('ul').html(' ');
+            socket.emit('run tests', {
+               feature: $('#feature-list').val()
+            });
+         });
+
+         socket.on('line out', function (msg) {
+            $('#output').append('<li>' + msg + '</li>');
+            $cont[0].scrollTop = $cont[0].scrollHeight;
+         });
+
+         socket.on('alert', function (msg) {
+            alert(msg);
+         });
+
+         socket.on('finished', function () {
+            $('.spinny').hide();
+            $('button').prop('disabled', false);
+         });
+
+         $.get('features').done(function (data) {
+            var list = $("#feature-list");
+            data = JSON.parse(data);
+            $.each(data, function(index, item) {
+               list.append(new Option(item, item));
+            });
+         });
+      </script>
+   </body>
+</html>
