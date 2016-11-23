@@ -9,6 +9,7 @@ var runningProcess = false;
 var fileSystem = require('fs');
 
 app.use(express.static(__dirname + '/public'));
+app.use(express.static(__dirname + '/bower_components'));
 
 app.get('/', function (req, res) {
    res.sendFile(__dirname + '/public/index.html');
@@ -23,7 +24,7 @@ app.get('/features', function (req, res) {
 io.on('connection', function (socket) {
    socket.on('run tests', function(data) {
       if (runningProcess) {
-         io.emit('alert', 'Test run already underway. Waiting...');
+         // io.emit('alert', 'Test run already underway. Waiting...');
          return;
       }
 
@@ -31,7 +32,10 @@ io.on('connection', function (socket) {
          'casperjs',
          [
             'test',
-            'yadda.js',
+            'bootstrap.js',
+            '--user="' + data.user + '"',
+            '--password="' + data.password + '"',
+            '--baseUrl="' + data.baseUrl + '"',
             '--feature="' + data.feature + '"'
          ]
       );

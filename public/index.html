@@ -1,14 +1,43 @@
 <!DOCTYPE html>
 <html>
    <head>
-      <title>Automated Test Runner</title>
+      <title>APEX Test Runner</title>
       <style>
-         html, body {height: 100%;}
-         .container-fluid {height: 100%; overflow-y: scroll;margin-top: 10px}
-         pre {max-height: 90%}
-         ul {list-style: none; max-height: 100%}
-         i.spinny {margin-left: 15px; display: none}
-         #stress-label {padding-left: 10px}
+         html, body {height: 95%;}
+         body {
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-image: url(http://saunteringsands.com/wp-content/uploads/2015/01/paradise-wallpaper-hd-eVQt.jpg)
+         }
+         pre {
+            max-height: 90%;
+         }
+         pre.console{
+            background-color: black;
+            color: greenyellow;
+         }
+         .container-fluid {
+            height: 100%;
+            overflow-y: scroll;
+            margin-top: 10px;
+            position:relative;
+         }
+         ul#output, ul#test-list {
+            list-style: none;
+            max-height: 100%
+         }
+         ul#test-list>li {
+        /*    background-color: lightgray;*/
+         }
+         ul#test-list>li>i{
+            float: right;
+         }
+         i.spinny {
+            margin-left: 15px;
+            display: none
+         }
+         .extra-info {display:none;}
+         #count-wrapper {padding-top: 8px}
       </style>
       <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
       <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
@@ -18,44 +47,93 @@
    </head>
    <body>
       <div class="container-fluid">
-         <div class="col-md-3">
-            <div class="form-group panel panel-info">
-               <div class="panel-heading">Feature</div>
-               <div class="panel-body">
-                  <select id="feature-list" class="form-control">
-                  </select>
+      <div class="col-md-3">
+         <div class="form-group panel panel-info">
+            <div class="panel-heading">Config</div>
+            <div class="panel-body">
+               <div class="form-group">
+                  <label for="base-url">Base URL</label>
+                  <input id="base-url" name="base-url" value="http://birks:8080/ords/scd/" placeholder="e.g. http://birks:8080/ords/scd/" class="form-control">
                </div>
-            </div>
-            <div class="form-group panel panel-success">
-               <div class="panel-heading">Application Test</div>
-               <div class="panel-body">
-                  <div class="form-group">
-                     <button id="run-tests" class="btn btn-success">Run Tests</button>
-                     <i id="test-spinny" class="fa fa-cog fa-spin fa-2x spinny"></i>
-                  </div>
+               <div class="form-group">
+                  <label for="user">Username</label>
+                  <input id="user" value="sc" name="user" class="form-control">
                </div>
+               <div class="form-group">
+                  <label for="password">Password</label>
+                  <input id="password" value="sc" name="password" type="password" class="form-control">
+               </div>
+               <span id="min-output-wrapper" class="pull-right">
+                  <label for="min-output"> Min. Output</label>
+                  <input id="min-output" type="checkbox"></input>
+               </span>
             </div>
          </div>
-         <pre>
-            <ul id="output" class="col-md-9"></ul>
-         </pre>
+         <div class="form-group panel panel-success">
+            <div class="panel-heading">Application Test</div>
+            <div class="panel-body">
+               <div class="form-group">
+                  <button id="run-tests" class="btn btn-success">Run All</button>
+                  <i id="test-spinny" class="fa fa-refresh fa-spin fa-2x spinny"></i>
+               </div>
+               <div class="form-group">
+                  <button type="button" data-toggle="modal" data-target="#myModal" id="show-screenshot" class="btn btn-danger">Show Screenshot</button>
+               </div>
+               <ul class="list-group" id="test-list">
+               </ul>
+               <!-- <a href="C:\test_screenshots">Screenshots Folder</a> -->
+            </div>
+         </div>
       </div>
+      <pre class="col-md-8 console">
+         <ul id="output"></ul>
+      </pre>
+
+      <div class="modal fade" id="myModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title">Screenshot</h4>
+            </div>
+            <div class="modal-body">
+              <img src="screen.png">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+          </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+      </div><!-- /.modal -->
       <script>
          var socket = io.connect();
          var $cont = $('pre');
+         var currentTest;
 
-         $('#run-tests').click( function () {
+         $('#run-tests').click(function() {
             $('#test-spinny').show();
             $('button').prop('disabled', true);
-            $('ul').html(' ');
+            $('ul#output').html(' ');
             socket.emit('run tests', {
-               feature: $('#feature-list').val()
+               user: $('#user').val(),
+               password: $('#password').val(),
+               baseUrl: $('#base-url').val()
             });
          });
 
+         $('#data-checkbox').on('change', function() {
+            if ($(this).prop('checked')) {
+               $('.extra-info').show();
+            } else {
+               $('.extra-info').hide();
+            }
+         });
+
          socket.on('line out', function (msg) {
-            $('#output').append('<li>' + msg + '</li>');
-            $cont[0].scrollTop = $cont[0].scrollHeight;
+            if ((msg.indexOf('FAIL') > -1 || msg.indexOf('Process')==0) || !$('#min-output').is(':checked')) {
+               $('#output').append('<li>' + msg + '</li>');
+               $cont[0].scrollTop = $cont[0].scrollHeight;
+            }
          });
 
          socket.on('alert', function (msg) {
@@ -65,6 +143,8 @@
          socket.on('finished', function () {
             $('.spinny').hide();
             $('button').prop('disabled', false);
+           currentTest.addClass('fa-play');
+           currentTest.removeClass('fa-spin');
          });
 
          $.get('features').done(function (data) {
@@ -72,8 +152,25 @@
             data = JSON.parse(data);
             $.each(data, function(index, item) {
                list.append(new Option(item, item));
+               console.log(item);
+               $('#test-list').append('<li class="list-group-item">' + item + '<i class="fa fa-play fa-refresh" aria-hidden="true"></i></li>');
+               });
+            $('.fa-play').click(function() {
+               currentTest = $(this);
+               // $('#test-spinny').show();
+               $(this).removeClass('fa-play');
+               $(this).addClass('fa-spin');
+               $('button').prop('disabled', true);
+               $('ul#output').html(' ');
+               socket.emit('run tests', {
+                  user: $('#user').val(),
+                  password: $('#password').val(),
+                  baseUrl: $('#base-url').val(),
+                  feature: $(this).parent().text()
+               });
             });
          });
       </script>
+
    </body>
 </html>
