@@ -23,6 +23,19 @@ module.exports.init = function() {
             casper.waitForUrl(re,null,null,20000);
         })
 
+        .given("I go to page $PAGE", function (page) {
+            baseUrl = baseUrl.replace(/(\/)$/,'');
+            casper.open(baseUrl + "/f?p=1:" + page);
+            casper.then( function() {
+                casper.fillSelectors('form[action="wwv_flow.accept"]', {
+                    '#P101_USERNAME': user,
+                    '#P101_PASSWORD': password,
+                }, true);
+            });
+            var re = new RegExp('f\?p=1:' + page);
+            casper.waitForUrl(re,null,null,20000);
+        })
+
         .given("I go to $URL", function(url) {
             casper.open(url);
         })
